@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Iceberg&family=Lexend+Deca:wght@100..900&family=Noto+Nastaliq+Urdu:wght@400..700&family=Parkinsans:wght@300..800&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
+  <title>Leaderboard</title>
+  <style>
+    .parkinsans-main {
+    font-family: "Parkinsans", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 900;
+    font-style: normal;
+    }
+    body {
+      font-family: "Parkinsans", sans-serif;
+      background: #000;
+      margin: 0; padding: 0;
+      font-size: 12px;
+      font-weight: 900;
+      overflow-x: hidden;
+    }
+    .table-container {
+      margin: 0px auto;
+      padding: 0px;
+      border-radius: 10px;
+      background: #bbb;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: clamp(6px, 2.4vw, 15px);
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border: none;
+      color: #000;
+    }
+    th {
+      background: #aaa;
+      cursor: pointer;
+    }
+    .gold   { background-color: #ffd900; }
+    .silver { background-color: #fff; }
+    .bronze { background-color: #db7816; }
+  </style>
+</head>
+<body>
+  <div class="table-container">
+    <table id="leaderboard">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Name</th>
+          <th>Score</th>
+          <th id="extraHeader">Extra</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+      </tbody>
+    </table>
+  </div>
+  <script>
+    let entries = [];
+    let searchParams = new URLSearchParams(location.search);
+    let blobMode = false;
+    let disableExtra = false;
+    if(searchParams.get("blobMode") == "true"){
+      extraHeader.textContent = "Blobs";
+      blobMode = true;
+    }
+    if(searchParams.get("extra") == "false") disableExtra = true;
+    function fetchAndRender() {
+      const publicKey = new URLSearchParams(location.search).get("publicKey") || "";
+      fetch("https://lcv2-server.danqzq.games/get?publicKey=" + publicKey)
+        .then(res => res.json())
+        .then(data => {
+          entries = data.map((entry, index) => {
+            return {
+              rank: index + 1,
+              name: entry.Username || "",
+              score: entry.Score || 0,
+              Extra: entry.Extra,
+              blobs: entry.Extra?.split?.(":::::")[0] || null
+            };
+          });
+          renderTable();
+        });
+    }
+    function renderTable() {
+      const tbody = document.getElementById("tableBody");
+      tbody.innerHTML = "";
+      const hasExtra = entries.some(e => e.Extra !== null);
+      document.getElementById("extraHeader").style.display = (hasExtra && !disableExtra) ? "" : "none";
+      let sorted = [...entries];
+      sorted.sort((a, b) => {
+        return a.rank - b.rank;
+      });
+      sorted.forEach((entry, i) => {
+        const tr = document.createElement("tr");
+        if (i == 0) tr.classList.add("gold");
+        else if (i == 1) { tr.classList.add("silver"); console.log("silver") }
+        else if (i == 2) tr.classList.add("bronze");
+        console.log(blobMode);
+        tr.innerHTML = `
+          <td>${i + 1}</td>
+          <td>${entry.name}</td>
+          <td>${entry.score}</td>
+          ${(hasExtra && !disableExtra) ? `<td>${blobMode ? entry.blobs : entry.Extra ?? ""}</td>` : ""}
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+    window.onload = fetchAndRender;
+  </script>
+</body>
+</html>
